@@ -10,67 +10,102 @@ class Order:
     quantity: int
 
 
-def match_orders(buy_order, sell_order):
-    # Check whether the orders are valid for matching
+@dataclass
+class Trade:
+    buy_order_id: int
+    sell_order_id: int
+    price: float
+    quantity: int
+
+
+def match_orders(buy_order, sell_orders):
+    # Validate the buy order
     if buy_order.side != "BUY":
-        print("First order must be a BUY order.")
-        return
+        print("The first order must be a BUY order.")
+        return []
 
-    if sell_order.side != "SELL":
-        print("Second order must be a SELL order.")
-        return
+    if buy_order.quantity <= 0:
+        print("Buy quantity must be positive.")
+        return []
 
-    if buy_order.quantity <= 0 or sell_order.quantity <= 0:
-        print("Order quantities must be positive.")
-        return
+    trades = []
 
-    # A trade is possible when the buy price covers the sell price
-    if buy_order.price >= sell_order.price:
-        traded_quantity = min(
-            buy_order.quantity,
-            sell_order.quantity
-        )
+    # Try matching the buy order with each sell order
+    for sell_order in sell_orders:
+        if buy_order.quantity == 0:
+            break
 
-        trade_price = sell_order.price
+        if sell_order.side != "SELL":
+            print("Skipping an invalid sell order.")
+            continue
 
-        # Update the remaining quantities
-        buy_order.quantity -= traded_quantity
-        sell_order.quantity -= traded_quantity
+        if sell_order.quantity <= 0:
+            print("Skipping a sell order with invalid quantity.")
+            continue
 
-        print("\nTrade Executed!")
-        print("-------------------------")
-        print("Trade quantity:", traded_quantity)
-        print("Trade price:", trade_price)
-        print("Remaining buy quantity:", buy_order.quantity)
-        print("Remaining sell quantity:", sell_order.quantity)
-    else:
-        print("\nNo trade: buy price is lower than sell price.")
+        # A trade is possible if the buy price covers the sell price
+        if buy_order.price >= sell_order.price:
+            traded_quantity = min(
+                buy_order.quantity,
+                sell_order.quantity
+            )
+
+            # Execute the trade at the seller's price
+            trade = Trade(
+                buy_order_id=buy_order.order_id,
+                sell_order_id=sell_order.order_id,
+                price=sell_order.price,
+                quantity=traded_quantity
+            )
+
+            trades.append(trade)
+
+            # Update remaining quantities
+            buy_order.quantity -= traded_quantity
+            sell_order.quantity -= traded_quantity
+
+    return trades
 
 
 def main():
-    buy_order = Order(
-        order_id=1,
-        side="BUY",
-        price=100.0,
-        quantity=10
-    )
+    buy_order = Order(1, "BUY", 100.0, 10)
 
-    sell_order = Order(
-        order_id=2,
-        side="SELL",
-        price=99.0,
-        quantity=5
-    )
+    sell_orders = [
+        Order(2, "SELL", 98.0, 4),
+        Order(3, "SELL", 99.0, 3),
+    ]
 
     print("ChronosMatch - Order Matching Engine")
     print("------------------------------------")
+    print("Initial buy order:", buy_order)
 
-    print("Buy order:", buy_order)
-    print("Sell order:", sell_order)
+    for order in sell_orders:
+        print("Sell order:", order)
 
-    match_orders(buy_order, sell_order)
+    trades = match_orders(buy_order, sell_orders)
+
+    print("\nTrade Results")
+    print("------------------------------------")
+
+    if trades:
+        for trade in trades:
+            print(
+                f"Trade: BUY #{trade.buy_order_id} with "
+                f"SELL #{trade.sell_order_id} | "
+                f"Quantity: {trade.quantity} | "
+                f"Price: {trade.price}"
+            )
+    else:
+        print("No trades executed.")
+
+    print("\nRemaining buy quantity:", buy_order.quantity)
+
+    for order in sell_orders:
+        print(
+            f"Remaining quantity for SELL #{order.order_id}:",
+            order.quantity
+        )
 
 
 if __name__ == "__main__":
     main()
-

@@ -41,6 +41,19 @@ class TestOrderMatching(unittest.TestCase):
         self.assertEqual(buy.quantity, 3)
         self.assertEqual(sells[0].quantity, 0)
         self.assertEqual(sells[1].quantity, 0)
+        
+    def test_lowest_sell_price_is_matched_first(self):
+        buy = Order(1, "BUY", 100.0, 10)
+        sells = [
+            Order(2, "SELL", 99.0, 4),
+            Order(3, "SELL", 98.0, 3),
+        ]
+
+        trades = match_orders(buy, sells)
+
+        self.assertEqual(trades[0].sell_order_id, 3)
+        self.assertEqual(trades[0].price, 98.0)
+        self.assertEqual(trades[0].quantity, 3)
 
 
 if __name__ == "__main__":

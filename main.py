@@ -31,7 +31,7 @@ def match_orders(buy_order, sell_orders):
     trades = []
 
     # Try matching the buy order with each sell order
-    for sell_order in sell_orders:
+    for sell_order in sorted(sell_orders, key=lambda order: order.price):
         if buy_order.quantity == 0:
             break
 

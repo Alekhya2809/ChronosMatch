@@ -1,7 +1,7 @@
 
 import unittest
 
-from main import Order, match_orders
+from main import Order, match_orders, is_valid_order
 
 
 class TestOrderMatching(unittest.TestCase):
@@ -54,6 +54,40 @@ class TestOrderMatching(unittest.TestCase):
         self.assertEqual(trades[0].sell_order_id, 3)
         self.assertEqual(trades[0].price, 98.0)
         self.assertEqual(trades[0].quantity, 3)
+        
+    
+    def test_invalid_buy_price_is_rejected(self):
+        buy = Order(1, "BUY", -10.0, 5)
+        sells = [Order(2, "SELL", 9.0, 5)]
+
+        trades = match_orders(buy, sells)
+
+        self.assertEqual(trades, [])
+        self.assertEqual(buy.quantity, 5)
+
+    def test_zero_quantity_is_rejected(self):
+        buy = Order(1, "BUY", 10.0, 0)
+        sells = [Order(2, "SELL", 9.0, 5)]
+
+        trades = match_orders(buy, sells)
+
+        self.assertEqual(trades, [])
+        self.assertEqual(buy.quantity, 0)
+
+    def test_invalid_sell_price_is_skipped(self):
+        buy = Order(1, "BUY", 10.0, 5)
+        sells = [
+            Order(2, "SELL", -1.0, 3),
+            Order(3, "SELL", 9.0, 2),
+        ]
+
+        trades = match_orders(buy, sells)
+
+        self.assertEqual(len(trades), 1)
+        self.assertEqual(trades[0].sell_order_id, 3)
+        self.assertEqual(trades[0].quantity, 2)
+        self.assertEqual(buy.quantity, 3)
+
 
 
 if __name__ == "__main__":

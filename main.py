@@ -1,5 +1,6 @@
 
 from dataclasses import dataclass
+import math
 
 
 @dataclass
@@ -18,29 +19,48 @@ class Trade:
     quantity: int
 
 
+def is_valid_order(order, expected_side):
+    """Check whether an order has valid values."""
+    if order.side != expected_side:
+        return False
+
+    if isinstance(order.price, bool) or not isinstance(
+        order.price, (int, float)
+    ):
+        return False
+
+    if not math.isfinite(order.price) or order.price <= 0:
+        return False
+
+    if isinstance(order.quantity, bool) or not isinstance(
+        order.quantity, int
+    ):
+        return False
+
+    if order.quantity <= 0:
+        return False
+
+    return True
+
+
 def match_orders(buy_order, sell_orders):
     # Validate the buy order
-    if buy_order.side != "BUY":
-        print("The first order must be a BUY order.")
-        return []
-
-    if buy_order.quantity <= 0:
-        print("Buy quantity must be positive.")
+    if not is_valid_order(buy_order, "BUY"):
+        print("Invalid buy order. Check its side, price, and quantity.")
         return []
 
     trades = []
 
-    # Try matching the buy order with each sell order
+    # Match the lowest-priced sell orders first
     for sell_order in sorted(sell_orders, key=lambda order: order.price):
         if buy_order.quantity == 0:
             break
 
-        if sell_order.side != "SELL":
-            print("Skipping an invalid sell order.")
-            continue
-
-        if sell_order.quantity <= 0:
-            print("Skipping a sell order with invalid quantity.")
+        # Skip invalid sell orders
+        if not is_valid_order(sell_order, "SELL"):
+            print(
+                f"Skipping invalid sell order #{sell_order.order_id}."
+            )
             continue
 
         # A trade is possible if the buy price covers the sell price
@@ -50,7 +70,6 @@ def match_orders(buy_order, sell_orders):
                 sell_order.quantity
             )
 
-            # Execute the trade at the seller's price
             trade = Trade(
                 buy_order_id=buy_order.order_id,
                 sell_order_id=sell_order.order_id,
